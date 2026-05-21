@@ -1,0 +1,12 @@
+{
+  "name": "dashboard-monitoreo-infra",
+  "version": "1.0.0",
+  "description": "App para laboratorio de CI/CD",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
