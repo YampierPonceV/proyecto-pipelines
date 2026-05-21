@@ -1,0 +1,66 @@
+name: CI/CD Pipeline - Dashboard Monitoreo
+
+# El pipeline se disparará automáticamente cada vez que hagas un push a la rama 'main'
+on:
+  push:
+    branches: ["master"]
+
+jobs:
+  deploy:
+    name: Build, Push to ECR and Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Descargar el código del repositorio en el runner de GitHub
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Configurar las credenciales de AWS usando tus secretos
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1 # Cambiala si usas otra región
+
+      # 3. Autenticar Docker contra el registro privado de AWS ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 4. Construir la imagen Docker, etiquetarla y subirla (Push) a ECR
+      - name: Build, Tag, and Push Image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: dashboard-infra-repo
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # 5. Conectarse a la EC2 por SSH, descargar la nueva imagen y levantar el contenedor
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_EC2_IP }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          envs: steps.login-ecr.outputs.registry
+          script: |
+            # Re-autenticar Docker dentro de la EC2 para que tenga permisos de descargar de ECR
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+
+            # Detener y eliminar el contenedor anterior si es que ya existe uno corriendo
+            docker stop mi-dashboard-prod || true
+            docker rm mi-dashboard-prod || true
+
+            # Descargar la versión más reciente de la imagen desde ECR
+            docker pull ${{ steps.login-ecr.outputs.registry }}/dashboard-infra-repo:latest
+
+            # Iniciar el nuevo contenedor en el puerto 8080 en segundo plano y con reinicio automático
+            docker run -d \
+              -p 8080:8080 \
+              --name mi-dashboard-prod \
+              --restart always \
+              ${{ steps.login-ecr.outputs.registry }}/dashboard-infra-repo:latest
