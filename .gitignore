@@ -1,1 +1,14 @@
-node_modules/
+# Ignorar la carpeta de binarios pesados
+.terraform/
+
+# Ignorar archivos de estado local (y sus respaldos)
+*.tfstate
+*.tfstate.backup
+
+# Ignorar archivos de variables secretas que puedas crear luego
+*.tfvars
+*.tfvars.json
+
+# Ignorar llaves privadas de seguridad (como tu archivo .pem)
+*.pem
+node_modules
