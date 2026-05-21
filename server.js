@@ -59,5 +59,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Aplicación ejecutándose en http://localhost:${PORT}`);
+  console.log(`Aplicación ejecutándose por http://localhost:${PORT}`);
 });
