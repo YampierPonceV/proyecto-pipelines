@@ -11,4 +11,31 @@
 
 # Ignorar llaves privadas de seguridad (como tu archivo .pem)
 *.pem
-node_modules
+node_modules/
+
+# Node
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+dist/
+build/
+coverage/
+
+# Environment files
+.env
+.env.*
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# Terraform extras
+.terraform.lock.hcl
